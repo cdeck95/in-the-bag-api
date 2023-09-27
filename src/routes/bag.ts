@@ -1,15 +1,23 @@
 // src/routes/bag.ts
 import express from 'express';
-import mysql from 'mysql2/promise'; // Import the MySQL library
+import mysql, { OkPacket, RowDataPacket } from 'mysql2/promise'; // Import the MySQL library
+import dotenv from 'dotenv';
 
 const router = express.Router();
 
+// Read database configuration from environment variables
+const {
+  DB_HOST,
+  DB_USER,
+  DB_PASSWORD,
+} = process.env;
+
 // MySQL connection pool configuration (adjust it as needed)
 const pool = mysql.createPool({
-  host: 'your_database_host',
-  user: 'your_database_user',
-  password: 'your_database_password',
-  database: 'your_database_name',
+  host: DB_HOST,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: 'discgolfdb',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -23,7 +31,7 @@ router.get('/:userId', async (req, res) => {
 
     // Define your SQL query here
     const query = 'SELECT * FROM bags WHERE user_id = ?';
-    const [rows, fields] = await connection.execute(query, [userId]);
+    const [rows, fields] = await connection.execute<RowDataPacket[]>(query, [userId]);
 
     // Release the connection back to the pool
     connection.release();
@@ -43,8 +51,13 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Function to process the bag data (similar to your Python code)
-function processBagData(rows: any[]) {
-  const bag = {
+function processBagData(rows: RowDataPacket[]) {
+  const bag: {
+    'Distance Drivers': string[];
+    'Fairway Drivers': string[];
+    'Mid-Ranges': string[];
+    'Putt/Approach': string[];
+  } = {
     'Distance Drivers': [],
     'Fairway Drivers': [],
     'Mid-Ranges': [],
@@ -58,8 +71,8 @@ function processBagData(rows: any[]) {
     const speed = disc.speed;
     const overrideCategory = disc.override_category;
 
-    // Adjust the logic for categorizing discs based on your requirements
-    let category = '';
+    let category: keyof typeof bag = 'Distance Drivers';
+
     if (overrideCategory) {
       category = overrideCategory;
     } else {
@@ -73,7 +86,6 @@ function processBagData(rows: any[]) {
         category = 'Putt/Approach';
       }
     }
-
     bag[category].push(disc.disc_name);
   }
 
