@@ -2,6 +2,7 @@
 import express from 'express';
 import mysql, { OkPacket, RowDataPacket } from 'mysql2/promise'; // Import the MySQL library
 import dotenv from 'dotenv';
+dotenv.config(); // Load environment variables from .env
 
 const router = express.Router();
 
@@ -12,11 +13,16 @@ const {
   DB_PASSWORD,
 } = process.env;
 
+console.log(`DB_HOST: ${DB_HOST}`);
+console.log(`DB_USER: ${DB_USER}`);
+
+
 // MySQL connection pool configuration (adjust it as needed)
 const pool = mysql.createPool({
   host: DB_HOST,
   user: DB_USER,
   password: DB_PASSWORD,
+  port: 3306, 
   database: 'discgolfdb',
   waitForConnections: true,
   connectionLimit: 10,
@@ -25,6 +31,7 @@ const pool = mysql.createPool({
 
 router.get('/:userId', async (req, res) => {
   const userId = req.params.userId;
+  console.log(`Received request for user ID: ${userId}`);
 
   try {
     const connection = await pool.getConnection();
