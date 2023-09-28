@@ -17,6 +17,20 @@ console.log(`DB_HOST: ${DB_HOST}`);
 console.log(`DB_USER: ${DB_USER}`);
 
 
+
+interface Disc {
+  id: number;
+  brand?: string;
+  disc_name: string;
+  speed?: number;
+  glide?: number;
+  turn?: number;
+  fade?: number;
+  category: string;
+}
+
+
+
 // MySQL connection pool configuration (adjust it as needed)
 const pool = mysql.createPool({
   host: DB_HOST,
@@ -60,10 +74,10 @@ router.get('/:userId', async (req, res) => {
 // Function to process the bag data (similar to your Python code)
 function processBagData(rows: RowDataPacket[]) {
   const bag: {
-    'Distance Drivers': string[];
-    'Fairway Drivers': string[];
-    'Mid-Ranges': string[];
-    'Putt/Approach': string[];
+    'Distance Drivers': Disc[];
+    'Fairway Drivers': Disc[];
+    'Mid-Ranges': Disc[];
+    'Putt/Approach': Disc[];
   } = {
     'Distance Drivers': [],
     'Fairway Drivers': [],
@@ -73,7 +87,7 @@ function processBagData(rows: RowDataPacket[]) {
 
   // Sort the rows by speed in descending order (highest speed first)
   rows.sort((a, b) => b.speed - a.speed);
-
+  let count = 0;
   for (const disc of rows) {
     const speed = disc.speed;
     const overrideCategory = disc.override_category;
@@ -93,7 +107,24 @@ function processBagData(rows: RowDataPacket[]) {
         category = 'Putt/Approach';
       }
     }
-    bag[category].push(disc.disc_name);
+
+    // Create a new Disc object and push it into the bag
+    const newDisc: Disc = {
+      id: count,
+      brand: disc.brand,
+      disc_name: disc.disc_name,
+      speed: disc.speed,
+      glide: disc.glide,
+      turn: disc.turn,
+      fade: disc.fade,
+      category: category,
+    };
+
+    count++;
+
+    console.log(`Adding ${newDisc.disc_name} to ${category}`);
+
+    bag[category].push(newDisc);
   }
 
   return bag;
